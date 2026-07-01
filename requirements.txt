@@ -1,0 +1,6 @@
+groq
+python-dotenv
+langgraph
+pydantic
+psycopg[binary]
+sentence-transformers
