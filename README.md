@@ -49,9 +49,33 @@ Key design decisions:
 - **Fault isolation.** Each agent's LLM call is wrapped so a single failure
   degrades to a flagged fallback report instead of crashing the dispatch.
 
+## Evaluation
+
+The system includes an evaluation harness (`eval/`) that scores the parts with
+objective ground truth — classification and routing — against a labeled test set
+of single-domain, multi-domain, and deliberately ambiguous incidents.
+
+```
+python eval/run_eval.py
+```
+
+Current results on 15 labeled cases:
+
+| Metric                  | Score |
+|-------------------------|-------|
+| Classification accuracy | 93%   |
+| Routing accuracy        | 93%   |
+
+Specialist unit recommendations are **intentionally not** auto-scored — there is
+no single correct dispatch, so an automated metric there would be misleading;
+that layer would call for human review or an LLM-as-judge approach. The harness
+also reports individual failure cases, which tend to be genuinely ambiguous
+incidents (e.g. a house fire with trapped residents — fire-only or multi-domain?)
+rather than outright errors.
+
 ## Tech stack
 
-LangGraph · Python · Groq · pgvector (PostgreSQL) · sentence-transformers
+Python · LangGraph · Groq · pgvector (PostgreSQL) · sentence-transformers · Docker
 
 ## Project layout
 
@@ -66,6 +90,9 @@ src/
   graph.py        # graph construction + routing
 scripts/
   build_kb.py     # builds the pgvector SOP knowledge base
+eval/
+  test_cases.py   # labeled test set (ground truth)
+  run_eval.py     # evaluation harness
 main.py           # runs one incident end-to-end
 ```
 
@@ -106,8 +133,14 @@ python scripts/build_kb.py
 python main.py
 ```
 
+**6. (Optional) Run the evaluation:**
+
+```bash
+python eval/run_eval.py
+```
+
 ## Possible extensions
 
 - Coordination layer so specialists don't overlap on cross-domain incidents
-- Observability (tracing + per-step cost/latency)
-- Evaluation harness (labeled test set, classification/routing accuracy)
+- Observability (tracing + per-step cost/latency, e.g. Langfuse)
+- Expanded, versioned SOP knowledge base loaded from source documents
